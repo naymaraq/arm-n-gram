@@ -1,13 +1,12 @@
-import os
+import os, sys
 import subprocess
 from dataclasses import dataclass
-import sys
-from multiprocessing import Pool
-import progressbar
 import sentencepiece
+import yaml
+from copy import copy
+
 
 import kenlm_utils
-from copy import copy
 
 TOKEN_OFFSET = 100
 CHUNK_SIZE = 8192
@@ -27,15 +26,14 @@ class KenLMTrainer:
     do_lowercase: bool=False
     memory: str="25%"
 
-    def prepare_dataset(self):
+    def prepare_dataset(self, encoding_level, tokenizer_path=None):
         
-        encoding_level = "char"
+        assert encoding_level in ["char", "subword"]
         dataset = kenlm_utils.read_train_file(self.train_file, lowercase=self.do_lowercase)
-
         encoded_train_file = f"{self.kenlm_models_folder}/dataset.tmp.txt"
         discount_arg = ""
         if encoding_level == "subword":
-            tokenizer = load_tokenizer("tokenizer.model")
+            tokenizer = load_tokenizer(tokenizer_path)
             kenlm_utils.tokenize_text(
                 dataset,
                 tokenizer,
@@ -143,9 +141,9 @@ class KenLMTrainerConfig:
 
 def train_one(args):
     try:
-        trainer_config, ngram_config = args
+        trainer_config, ngram_config, encoding_level, tokenizer_path = args
         trainer = KenLMTrainer(**trainer_config)
-        trainer.prepare_dataset()
+        trainer.prepare_dataset(encoding_level, tokenizer_path)
         for ngram, prune, tmp_folder, q, b, a in ngram_config:
             model_path = trainer.fit(ngram, prune, tmp_folder, q, b, a)
             print(f"Finished constructing {model_path}")
@@ -153,47 +151,38 @@ def train_one(args):
         print(e)
 
 
+def read_yaml(yaml_path):
+    with open(yaml_path, "r") as stream:
+        data = yaml.safe_load(stream)
+    return data
+
 if __name__ == "__main__":
 
-    where_to_store = sys.argv[1]
-    custom_tmp_folder = None
-    if len(sys.argv[1:]) > 1:
-        custom_tmp_folder = sys.argv[2]
+    config = read_yaml("conf/config.yaml")
 
-    kenlm_bin_path = "/home/tsargsyan/davit/arm/decoders/kenlm/build/bin"
+    N, P, Q = int(config["N"]), int(config["P"]), int(config["Q"])
+    kenlm_bin_path = config["kenlm_bin_path"]
+    where_to_store = config["where_to_store"]
+    custom_tmp_folder = config["custom_tmp_folder"]
 
-    #dataset0 = ["/home/tsargsyan/davit/arm/data/normalized/arm-wiki.txt",
-    #           "/home/tsargsyan/davit/arm/data/normalized/train-arpa.txt",
-    #           "/home/tsargsyan/davit/arm/data/normalized/train-conllu.txt"]
-    #datasets = {"lms": dataset0}
-    base_dataset = [None]
+    datasets = {"lms": [config["txt_path"]]}
     base_config = KenLMTrainerConfig(
         kenlm_bin_path=kenlm_bin_path
     )
 
-    dataset_configs=[]
-    for key, dataset in datasets.items():
-        cfg = copy(base_config)
-        cfg.set_train_file(dataset)
-        os.makedirs(os.path.join(where_to_store, key), exist_ok=True)
-        cfg.set_models_folder(os.path.join(where_to_store, key))
-        dataset_configs.append(cfg.todict())
+    key = "lms"
+    dataset = datasets[key]
+    cfg = copy(base_config)
+    cfg.set_train_file(dataset)
+    os.makedirs(os.path.join(where_to_store, key), exist_ok=True)
+    cfg.set_models_folder(os.path.join(where_to_store, key))
+    dataset_config = cfg.todict()
     
     ngram_config=[]
-    for n in [2,3,4,5,6,7,8,9,10]:
-        ngram_config.append((n, "|".join(["0"]*n), custom_tmp_folder, 8, 8, 64))
-        # ngram_config.append((n, "|".join(["0"]*n), custom_tmp_folder, None, None, None))
-        #prune = [50 for i in range(n)]
-        #ngram_config.append((n, "|".join(map(str, prune)), custom_tmp_folder, 8, 8, 64))
+    ngram_config.append((N, "|".join([f"{P}"]*N), custom_tmp_folder, Q, Q, 64))
 
-    args = []
-    for dataset_config in dataset_configs:
-        args.append((dataset_config, ngram_config))
-    
-    pool = Pool()
-    bar = progressbar.ProgressBar(max_value=len(args))
-    for i, _ in enumerate(pool.imap_unordered(train_one, args)):
-        bar.update(i)
-    bar.update(len(args))
-    pool.close()
-    pool.join()
+    encoding_level = config["encoding_level"]
+    tokenizer_path = None
+    if encoding_level == "subword":
+        tokenizer_path = config["tokenizer_path"]
+    train_one((dataset_config, ngram_config, encoding_level, tokenizer_path))

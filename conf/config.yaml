@@ -1,0 +1,20 @@
+where_to_store: "test"
+custom_tmp_folder: None
+
+kenlm_bin_path: "/data/davit/arm-n-gram/decoders/kenlm/build/bin"
+txt_path: "/data/davit/arm-n-gram/data/normalized/arm-wiki.txt"
+
+# N-gram order
+N: 4
+
+# Pruning Threshold
+P: 4
+
+# Quantization bits
+Q: 8
+
+# encoding_level can be "char" or "bpe"
+encoding_level: "char"
+tokenizer_path: None
+
+

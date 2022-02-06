@@ -1,19 +1,22 @@
-where_to_store: "test"
+where_to_store: "path/to/store/lms"
 custom_tmp_folder: None
 
-kenlm_bin_path: "/data/davit/arm-n-gram/decoders/kenlm/build/bin"
-txt_path: "/data/davit/arm-n-gram/data/normalized/arm-wiki.txt"
+kenlm_bin_path: "path/to/kenlm/build/bin"
+txt_path: "path/to/text/file"
 
 # N-gram order
+# if N>6, yo should compile KenLM for higher orders
 N: 4
 
 # Pruning Threshold
+# P=0 eqauls to no prouning
 P: 4
 
 # Quantization bits
 Q: 8
 
-# encoding_level can be "char" or "bpe"
+# encoding_level can be "char" or "subword"
+# if encoding_level=="subword": need to specify tokenizer path too
 encoding_level: "char"
 tokenizer_path: None
 

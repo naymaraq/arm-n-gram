@@ -158,7 +158,8 @@ def read_yaml(yaml_path):
 
 if __name__ == "__main__":
 
-    config = read_yaml("conf/config.yaml")
+    config_path = sys.argv[1]
+    config = read_yaml(config_path)
 
     N, P, Q = int(config["N"]), int(config["P"]), int(config["Q"])
     kenlm_bin_path = config["kenlm_bin_path"]

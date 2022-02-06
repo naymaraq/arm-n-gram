@@ -1,7 +1,5 @@
-import os, sys
 from conllu import parse
 import pandas as pd
-import string
 import unicodedata
 import re
 
@@ -71,37 +69,3 @@ def write_texts(texts, out_path):
         for text in texts:
             f.write(text)
             f.write("\n")
-
-
-out_folder = sys.argv[1]
-os.makedirs(out_folder, exist_ok=True)
-
-#Wiki
-print("Normalize wiki")
-wiki_path = "/home/tsargsyan/davit/arm/data/arm-wiki/tmp.txt"
-texts = read_wiki(wiki_path)
-n_texts = normalize_many(texts)
-print("Normalized {} words".format(count_words(n_texts)))
-write_texts(n_texts, os.path.join(out_folder, "arm-wiki.txt"))
-
-#Conllu
-print("Normalize Conllu")
-train_conllu = "/home/tsargsyan/davit/arm/data/conllu/UD_Armenian-ArmTDP/hy_armtdp-ud-train.conllu"
-dev_conllu = "/home/tsargsyan/davit/arm/data/conllu/UD_Armenian-ArmTDP/hy_armtdp-ud-dev.conllu"
-test_conllu = "/home/tsargsyan/davit/arm/data/conllu/UD_Armenian-ArmTDP/hy_armtdp-ud-test.conllu"
-
-for conllu_path, name in  zip([train_conllu, dev_conllu, test_conllu], ["train", "dev", "test"]):
-    texts = read_conllu(conllu_path)
-    n_texts = normalize_many(texts)
-    print("Normalized {} words".format(count_words(n_texts)))
-    write_texts(n_texts, os.path.join(out_folder, f"{name}-conllu.txt"))
-
-#ARPA
-print("Normalize ARPA")
-train_arpa = "/home/tsargsyan/davit/arm/data/arpa/arpa-paraphrase-corpus/train.tsv"
-test_arpa = "/home/tsargsyan/davit/arm/data/arpa/arpa-paraphrase-corpus/test.tsv"
-for arpa_path, name in  zip([train_arpa, test_arpa], ["train", "test"]):
-    texts = read_arpa(arpa_path)
-    n_texts = normalize_many(texts)
-    print("Normalized {} words".format(count_words(n_texts)))
-    write_texts(n_texts, os.path.join(out_folder, f"{name}-arpa.txt"))

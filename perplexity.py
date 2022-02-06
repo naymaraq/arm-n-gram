@@ -1,11 +1,17 @@
-import kenlm
-import sys
+def read(text_path):
+    texts = []
+    with open(text_path) as f:
+        for line in f.readlines():
+            texts.append(line.strip())
+    return texts
 
-binary_file ="ngram-vs-perp/lms/char-5-0|0|0|0|0-q8-b8-a64.binary"
-model = kenlm.Model(binary_file)
+def corpus_perplexity(corpus_path, model):
+    texts = read(corpus_path)
+    N = sum(len(x.split()) for x in texts)
 
-text_path = sys.argv[1]
-with open(text_path) as f:
-    text = f.read()
-sen_perp = model.perplexity(text)
-print(sen_perp)
+    corpus_perp = 1
+    for text in texts:
+        sen_perp = model.perplexity(text)
+        sen_perp_normed = sen_perp ** (len(text.split())/N)
+        corpus_perp *= sen_perp_normed
+    return corpus_perp

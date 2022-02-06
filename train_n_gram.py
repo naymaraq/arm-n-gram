@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import sys
 from multiprocessing import Pool
 import progressbar
-
+import sentencepiece
 
 import kenlm_utils
 from copy import copy
@@ -13,12 +13,10 @@ TOKEN_OFFSET = 100
 CHUNK_SIZE = 8192
 CHUNK_BUFFER_SIZE = 512
 
-import sentencepiece
 def load_tokenizer(model_path):
     tokenizer = sentencepiece.SentencePieceProcessor()
     tokenizer.Load(model_path)
     return tokenizer
-
 
 @dataclass
 class KenLMTrainer:
